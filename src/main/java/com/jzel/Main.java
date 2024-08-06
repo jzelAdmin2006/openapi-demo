@@ -3,6 +3,7 @@ package com.jzel;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 
+import com.google.gson.Gson;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -17,10 +18,11 @@ public class Main {
 
   private static final String OPENAPI_KEY = System.getenv("OPENAPI_KEY");
   private static final String MODEL = "gpt-4o-mini";
+  private static final Gson GSON = new Gson();
   private static final HttpClientResponseHandler<String> RESPONSE_HANDLER = response -> {
     final int status = response.getCode();
     if (status >= 200 && status < 300) {
-      return extractContentFromResponse(readResponse(response));
+      return GSON.fromJson(readResponse(response), ApiResponse.class).getChoices()[0].getMessage().getContent();
     } else {
       throw new IOException("Unexpected response status: " + status);
     }
@@ -67,10 +69,5 @@ public class Main {
     try (final BufferedReader r = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), UTF_8))) {
       return r.lines().collect(joining("\n"));
     }
-  }
-
-  private static String extractContentFromResponse(final String response) {
-    final int startMarker = response.indexOf("content") + 11;
-    return response.substring(startMarker, response.indexOf("\"", startMarker));
   }
 }
